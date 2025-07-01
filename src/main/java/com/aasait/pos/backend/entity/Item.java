@@ -13,11 +13,12 @@ public class Item {
     @GeneratedValue
     private Long id;
 
+    private String batchNum;
     private String name;
     private String category;
     private String remarks;
     private String brand;
 
-    @ManyToOne
-    private Order orderId;
+
+
 }
