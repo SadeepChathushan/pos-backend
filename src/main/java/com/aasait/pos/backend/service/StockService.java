@@ -12,4 +12,8 @@ public interface StockService {
     List<SupplierDTO> getAllSupplier();
 
     AddItemDTO addItem(AddItemDTO addItemDTO);
+
+    List<String> getAllSupplierNames();
+
+    List<String> getAllItemsName();
 }

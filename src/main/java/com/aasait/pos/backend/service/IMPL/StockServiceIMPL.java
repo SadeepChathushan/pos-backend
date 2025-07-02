@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -36,6 +37,13 @@ public class StockServiceIMPL implements StockService {
         if (existingSupplierByEmail.isPresent()) {
             throw new IllegalArgumentException("Supplier with email " + addSupplierDTO.getEmail() + " already exists");
         }
+
+        // Check by name
+        Optional<Supplier> existingSupplierByName = supplierRepo.findByName(addSupplierDTO.getName());
+        if (existingSupplierByName.isPresent()) {
+            throw new IllegalArgumentException("Supplier with name " + addSupplierDTO.getName() + " already exists");
+        }
+
 
         // Convert DTO to Entity
         Supplier supplier = modelMapper.map(addSupplierDTO, Supplier.class);
@@ -65,5 +73,29 @@ public class StockServiceIMPL implements StockService {
         Item savedItem = itemRepo.save(item);
         return modelMapper.map(savedItem, AddItemDTO.class);
     }
+
+    @Override
+    public List<String> getAllSupplierNames() {
+        List<String> names = supplierRepo.findAllSupplierNames();
+
+        if (names.isEmpty()) {
+            throw new NoSuchElementException("No suppliers found");
+        }
+
+        return names;
+    }
+
+    @Override
+    public List<String> getAllItemsName() {
+        List<String> names = itemRepo.findAllItemNames();
+
+        if(names.isEmpty()) {
+            throw new NoSuchElementException("No suppliers found");
+        }
+
+        return names;
+    }
+
+
 
 }
