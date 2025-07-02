@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping("api/v1/stockkeeper")
@@ -41,5 +42,70 @@ public class StockController {
                 HttpStatus.CREATED.value()
         );
         return new ResponseEntity<>(response , HttpStatus.CREATED);
+    }
+
+    @GetMapping(path = "/get-suppliersName")
+    public ResponseEntity<ApiResponse<List<String>>> getAllSupplierNames() {
+        try {
+            List<String> supplierNames = stockService.getAllSupplierNames();
+
+            ApiResponse<List<String>> response = new ApiResponse<>(
+                    LocalDateTime.now(),
+                    "Supplier names fetched successfully",
+                    supplierNames,
+                    HttpStatus.OK.value()
+            );
+
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (NoSuchElementException e) {
+            ApiResponse<List<String>> response = new ApiResponse<>(
+                    LocalDateTime.now(),
+                    e.getMessage(),
+                    null,
+                    HttpStatus.NOT_FOUND.value()
+            );
+            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            ApiResponse<List<String>> response = new ApiResponse<>(
+                    LocalDateTime.now(),
+                    "Internal server error",
+                    null,
+                    HttpStatus.INTERNAL_SERVER_ERROR.value()
+            );
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+    @GetMapping(path = "/get-itemNames")
+    public ResponseEntity<ApiResponse<List<String>>> getAllItemsName() {
+        try {
+            List<String> itemNames = stockService.getAllItemsName();
+
+            ApiResponse<List<String>> response = new ApiResponse<>(
+                    LocalDateTime.now(),
+                    "Supplier names fetched successfully",
+                    itemNames,
+                    HttpStatus.OK.value()
+            );
+//
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (NoSuchElementException e) {
+            ApiResponse<List<String>> response = new ApiResponse<>(
+                    LocalDateTime.now(),
+                    e.getMessage(),
+                    null,
+                    HttpStatus.NOT_FOUND.value()
+            );
+            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            ApiResponse<List<String>> response = new ApiResponse<>(
+                    LocalDateTime.now(),
+                    "Internal server error",
+                    null,
+                    HttpStatus.INTERNAL_SERVER_ERROR.value()
+            );
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }
