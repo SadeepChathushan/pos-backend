@@ -3,7 +3,6 @@ package com.aasait.pos.backend.entity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
-import jakarta.persistence.ManyToOne;
 import lombok.Data;
 
 @Entity
@@ -18,7 +17,5 @@ public class Item {
     private String category;
     private String remarks;
     private String brand;
-
-
 
 }
