@@ -3,6 +3,7 @@ package com.aasait.pos.backend.controller;
 import com.aasait.pos.backend.dto.ApiResponse;
 import com.aasait.pos.backend.dto.request.AddItemDTO;
 import com.aasait.pos.backend.dto.request.AddSupplierDTO;
+import com.aasait.pos.backend.dto.request.SupplierOrderDTO;
 import com.aasait.pos.backend.dto.response.SupplierDTO;
 import com.aasait.pos.backend.service.StockService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -106,6 +107,31 @@ public class StockController {
                     HttpStatus.INTERNAL_SERVER_ERROR.value()
             );
             return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+    @PostMapping(path = "/add-supplier-order")
+    public ResponseEntity<ApiResponse<List<String>>> addSupplierOrder(@RequestBody SupplierOrderDTO supplierOrderDTO){
+        try {
+            stockService.saveSupplierOrder(supplierOrderDTO);
+
+            ApiResponse<List<String>> response = new ApiResponse<>(
+                    LocalDateTime.now(),
+                    "Order saved Successfully",
+                    List.of("success"),
+                    HttpStatus.CREATED.value()
+            );
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
+        } catch (Exception e){
+            ApiResponse<List<String>> response = new ApiResponse<>(
+
+                    LocalDateTime.now(),
+                    "Failed to save order" + e.getMessage(),
+                    null,
+                    HttpStatus.INTERNAL_SERVER_ERROR.value()
+        );
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

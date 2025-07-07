@@ -2,11 +2,17 @@ package com.aasait.pos.backend.service.IMPL;
 
 import com.aasait.pos.backend.dto.request.AddItemDTO;
 import com.aasait.pos.backend.dto.request.AddSupplierDTO;
+import com.aasait.pos.backend.dto.request.SupplierOItemDTO;
+import com.aasait.pos.backend.dto.request.SupplierOrderDTO;
 import com.aasait.pos.backend.dto.response.SupplierDTO;
 import com.aasait.pos.backend.entity.Item;
+import com.aasait.pos.backend.entity.Order;
+import com.aasait.pos.backend.entity.OrderItem;
 import com.aasait.pos.backend.entity.Supplier;
 import com.aasait.pos.backend.exception.ResourceAlreadyExistsException;
+import com.aasait.pos.backend.exception.ResourceNotFoundException;
 import com.aasait.pos.backend.repository.ItemRepo;
+import com.aasait.pos.backend.repository.OrderRepo;
 import com.aasait.pos.backend.repository.SupplierRepo;
 import com.aasait.pos.backend.service.StockService;
 import org.modelmapper.ModelMapper;
@@ -29,6 +35,9 @@ public class StockServiceIMPL implements StockService {
 
     @Autowired
     private ModelMapper modelMapper;
+
+    @Autowired
+    private OrderRepo orderRepo;
 
     @Override
     public AddSupplierDTO registerSupplier(AddSupplierDTO addSupplierDTO) {
@@ -96,6 +105,34 @@ public class StockServiceIMPL implements StockService {
         return names;
     }
 
+    @Override
+    public void saveSupplierOrder(SupplierOrderDTO supplierOrderDTO) {
+
+        Supplier supplier = supplierRepo.findById(supplierOrderDTO.getSupplierId())
+                .orElseThrow(() -> new ResourceNotFoundException("Supplier not found"));
+
+        Order order = modelMapper.map(supplierOrderDTO, Order.class);
+        order.setId(null);
+        order.setSupplierId(supplier);
+
+        List<OrderItem> orderItems =supplierOrderDTO.getItems().stream().map((SupplierOItemDTO itemDTO) ->{
+            Item item = itemRepo.findById(itemDTO.getItemId())
+                    .orElseThrow(()-> new ResourceNotFoundException("Item not found with ID: " + itemDTO.getItemId()));
+
+            OrderItem orderItem =new OrderItem();
+            orderItem.setItem(item);
+            orderItem.setQuantity(itemDTO.getQuantity());
+            orderItem.setUnitPrice(itemDTO.getUnitPrice());
+            orderItem.setOrder(order);
+            return orderItem;
+        }).toList();
+
+        // 4. Set mapped orderItems in the Order
+        order.setItems(orderItems);
+
+        // 5. Save the complete Order with cascade for OrderItems
+        orderRepo.save(order);
+    }
 
 
 }
