@@ -7,6 +7,8 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -53,6 +55,35 @@ public class OurUsers implements UserDetails {
 
     @Column
     private Date dob;
+
+    @Column(nullable = false)
+    private boolean accountNonLocked = true;
+
+    @Column(nullable = false)
+    private int failedAttempt = 0;
+
+    private Instant lockTime;
+
+    public void incFailed() {
+        this.failedAttempt++;
+    }
+
+    public void resetFailed() {
+        this.failedAttempt = 0;
+    }
+
+
+
+
+    public boolean isLocked() {
+        if (!accountNonLocked && lockTime != null &&
+                Instant.now().isAfter(lockTime.plus(15, ChronoUnit.MINUTES))) {
+            // auto-unlock after 15 min
+            accountNonLocked = true;
+            resetFailed();
+        }
+        return !accountNonLocked;
+    }
 
 
 
