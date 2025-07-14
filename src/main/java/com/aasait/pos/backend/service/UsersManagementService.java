@@ -3,132 +3,148 @@ package com.aasait.pos.backend.service;
 import com.aasait.pos.backend.dto.ReqRes;
 import com.aasait.pos.backend.entity.OurUsers;
 import com.aasait.pos.backend.repository.OurUsersRepo;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
+@Transactional
 public class UsersManagementService {
-    @Autowired
-    private OurUsersRepo ourUsersRepo;
-    @Autowired
-    private JWTUtils jwtUtils;
-    @Autowired
-    private AuthenticationManager authenticationManager;
-    @Autowired
-    private PasswordEncoder passwordEncoder;
 
+    private final OurUsersRepo           usersRepo;
+    private final AuthenticationManager  authManager;
+    private final PasswordEncoder        encoder;
+    private final JWTUtils               jwt;
+    private final LoginAttemptService    attempts;
+    private final RefreshTokenService    refreshSvc;
 
+    /* ---------------------------------------------------------
+     * LOGIN
+     * --------------------------------------------------------- */
+    public ReqRes login(ReqRes in) {
 
-    public ReqRes login(ReqRes loginRequest) {
-        ReqRes response = new ReqRes();
-        try {
-            Optional<OurUsers> existingUser = Optional.empty();
+        ReqRes resp = new ReqRes();
 
+        // 1) locate user by e-mail
+        OurUsers user = usersRepo.findByEmail(in.getEmail())
+                .orElse(null);
 
-
-            // If not a child login, check by email
-            if (!existingUser.isPresent() && (loginRequest.getEmail() != null) && !loginRequest.getEmail().isEmpty()) {
-                existingUser = ourUsersRepo.findByEmail(loginRequest.getEmail());
-            }
-
-            if (!existingUser.isPresent()) {
-                response.setStatusCode(400);
-                response.setMassage("Email or Child ID not found!");
-                return response;
-            }
-
-            var user = existingUser.orElseThrow();
-            var jwt = jwtUtils.generateToken(user);
-            var refreshToken = jwtUtils.generateRefreshToken(new HashMap<>(), user);
-            response.setStatusCode(200);
-            response.setToken(jwt);
-            response.setRole(user.getRole());
-            response.setUserId(user.getId());
-            response.setRefreshToken(refreshToken);
-            response.setExpirationTime("24Hrs");
-            response.setMassage("Successfully logged in");
-
-        } catch (Exception e) {
-            response.setStatusCode(500);
-            response.setMassage(e.getMessage());
+        if (user == null) {
+            resp.setStatusCode(404);
+            resp.setMassage("Email not found");
+            return resp;
         }
-        return response;
+
+        if (user.isLocked()) {                         // auto-unlock logic inside isLocked()
+            resp.setStatusCode(423);                   // HTTP 423 Locked
+            resp.setMassage("Account temporarily locked – try again later");
+            return resp;
+        }
+
+        /* client IP for audit / brute-force log */
+        String ip = ((ServletRequestAttributes) RequestContextHolder
+                .currentRequestAttributes())
+                .getRequest()
+                .getRemoteAddr();
+
+        // 2) verify password
+        try {
+            authManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(in.getEmail(), in.getPassword()));
+        } catch (BadCredentialsException bad) {
+            attempts.onFailure(user, ip);              // ++fail counter / maybe lock
+            resp.setStatusCode(401);
+            resp.setMassage("Invalid credentials");
+            return resp;
+        }
+
+        // 3) success path
+        attempts.onSuccess(user, ip);                  // reset counter & audit OK
+        String access  = jwt.generateToken(user);      // 5-min access token
+        String refresh = refreshSvc.issue(user);       // 7-day refresh token
+
+
+        resp.setStatusCode(200);
+        resp.setMassage("Logged-in");
+        resp.setToken(access);
+        resp.setRefreshToken(refresh);
+        resp.setExpirationTime("5 min");
+        resp.setRole(user.getRole());
+        resp.setUserId(user.getId());
+        return resp;
     }
 
+    /* ---------------------------------------------------------
+     * REFRESH TOKEN
+     * --------------------------------------------------------- */
+    public ReqRes refreshToken(ReqRes in) {
 
-
-
-    public ReqRes refreshToken(ReqRes refreshTokenReqiest) {
-        ReqRes response = new ReqRes();
-        try {
-            String ourEmail = jwtUtils.extractUsername(refreshTokenReqiest.getToken());
-            OurUsers users = ourUsersRepo.findByEmail(ourEmail).orElseThrow();
-            if (jwtUtils.isTokenValid(refreshTokenReqiest.getToken(), users)) {
-                var jwt = jwtUtils.generateToken(users);
-                response.setToken(jwt);
-                response.setRefreshToken(refreshTokenReqiest.getToken());
-                response.setExpirationTime("24Hr");
-                response.setMassage("Successfully Refreshed Token");
-            }
-            response.setStatusCode(200);
-            return response;
-
-        } catch (Exception e) {
-            response.setStatusCode(500);
-            response.setMassage(e.getMessage());
-            return response;
-        }
-    }
-
-
-
-
-
-    public ReqRes userRegister(ReqRes req) {
         ReqRes resp = new ReqRes();
 
         try {
-            if (req.getPassword() == null || req.getPassword().isEmpty()) {
-                resp.setStatusCode(400);
-                resp.setMassage("Password cannot be null or empty");
-                return resp;
-            }
+            OurUsers user   = refreshSvc.validateAndRotate(in.getToken()); // revokes old
+            String   access = jwt.generateToken(user);
+            String   rtn    = refreshSvc.issue(user);
 
-            Optional<OurUsers> existingUserByEmail = ourUsersRepo.findByEmail(req.getEmail());
-            if (existingUserByEmail.isPresent()) {
-                resp.setStatusCode(400);
-                resp.setMassage("Email is already registered!");
-                return resp;
-            }
-
-            OurUsers ourUser = new OurUsers();
-            ourUser.setEmail(req.getEmail());
-            ourUser.setFullName(req.getFullName());
-            ourUser.setNic(req.getNic());
-            ourUser.setCreatedAt(new Date());  // Automatically set to the current timestamp
-            ourUser.setPassword(passwordEncoder.encode(req.getPassword()));
-            ourUser.setContactNo(req.getContactNo());
-            ourUser.setDob(req.getDob());
-            ourUser.setGender(req.getGender());
-            ourUser.setRole(req.getRole());
-
-            OurUsers ourUsersResult = ourUsersRepo.save(ourUser);
-            if (ourUsersResult.getId() > 0) {
-                resp.setOurUsers((ourUsersResult));
-                resp.setMassage("User registered successfully");
-                resp.setStatusCode(200);
-            }
-
-        } catch (Exception e) {
-            resp.setStatusCode(500);
-            resp.setError(e.getMessage());
+            resp.setStatusCode(200);
+            resp.setMassage("Token refreshed");
+            resp.setToken(access);
+            resp.setRefreshToken(rtn);
+            resp.setExpirationTime("5 min");
+            resp.setRole(user.getRole());
+            resp.setUserId(user.getId());
+        } catch (RuntimeException ex) {
+            resp.setStatusCode(401);
+            resp.setMassage(ex.getMessage());
         }
+        return resp;
+    }
+
+    /* ---------------------------------------------------------
+     * USER REGISTER
+     * --------------------------------------------------------- */
+    public ReqRes userRegister(ReqRes in) {
+
+        ReqRes resp = new ReqRes();
+
+        if (in.getPassword() == null || in.getPassword().isBlank()) {
+            resp.setStatusCode(400);
+            resp.setMassage("Password cannot be empty");
+            return resp;
+        }
+        if (usersRepo.existsByEmail(in.getEmail())) {
+            resp.setStatusCode(409);
+            resp.setMassage("Email already registered");
+            return resp;
+        }
+
+        OurUsers u = new OurUsers();
+        u.setEmail(in.getEmail());
+        u.setFullName(in.getFullName());
+        u.setNic(in.getNic());
+        u.setContactNo(in.getContactNo());
+        u.setDob(in.getDob());
+        u.setGender(in.getGender());
+        u.setRole(in.getRole());
+        u.setCreatedAt(new Date());
+        u.setPassword(encoder.encode(in.getPassword()));
+
+        usersRepo.save(u);
+
+        resp.setStatusCode(201);
+        resp.setMassage("User registered");
+        resp.setOurUsers(u);
         return resp;
     }
 }
