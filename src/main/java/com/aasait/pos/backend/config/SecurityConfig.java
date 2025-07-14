@@ -39,6 +39,7 @@ public class SecurityConfig {
                         .requestMatchers("/stockkeeper/**").hasAnyAuthority("STOCKKEEPER")
                         .requestMatchers("/anyuser/**").hasAnyAuthority("ADMIN", "CASHIER","STOCKKEEPER")
                         .anyRequest().authenticated()
+
                 )
                 .sessionManagement(manager-> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider()).addFilterBefore(
