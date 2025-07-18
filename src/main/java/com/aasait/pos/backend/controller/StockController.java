@@ -4,6 +4,7 @@ import com.aasait.pos.backend.dto.ApiResponse;
 import com.aasait.pos.backend.dto.request.AddItemDTO;
 import com.aasait.pos.backend.dto.request.AddSupplierDTO;
 import com.aasait.pos.backend.dto.request.SupplierOrderDTO;
+import com.aasait.pos.backend.dto.response.OrderDTO;
 import com.aasait.pos.backend.dto.response.SupplierDTO;
 import com.aasait.pos.backend.service.StockService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -89,7 +90,7 @@ public class StockController {
                     itemNames,
                     HttpStatus.OK.value()
             );
-//
+
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (NoSuchElementException e) {
             ApiResponse<List<String>> response = new ApiResponse<>(
@@ -134,4 +135,38 @@ public class StockController {
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+
+    @GetMapping(path = "/get-all-orders")
+    public ResponseEntity<ApiResponse<List<OrderDTO>>> getAllOrders(){
+        try {
+            List<OrderDTO> orders = stockService.getAllOrders();
+
+            ApiResponse<List<OrderDTO>> response = new ApiResponse<>(
+                    LocalDateTime.now(),
+                    "All Data Fetch Sucessfully",
+                    orders,
+                    HttpStatus.OK.value()
+            );
+            return new ResponseEntity<>(response, HttpStatus.OK);
+
+        } catch (NoSuchElementException e) {
+            ApiResponse<List<OrderDTO>> response = new ApiResponse<>(
+                    LocalDateTime.now(),
+                    e.getMessage(),
+                    null,
+                    HttpStatus.NOT_FOUND.value()
+            );
+            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            ApiResponse<List<OrderDTO>> response = new ApiResponse<>(
+                    LocalDateTime.now(),
+                    "Internal server error",
+                    null,
+                    HttpStatus.INTERNAL_SERVER_ERROR.value()
+            );
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
 }

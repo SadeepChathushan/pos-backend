@@ -4,6 +4,8 @@ import com.aasait.pos.backend.dto.request.AddItemDTO;
 import com.aasait.pos.backend.dto.request.AddSupplierDTO;
 import com.aasait.pos.backend.dto.request.SupplierOItemDTO;
 import com.aasait.pos.backend.dto.request.SupplierOrderDTO;
+import com.aasait.pos.backend.dto.response.OrderDTO;
+import com.aasait.pos.backend.dto.response.OrderItemDTO;
 import com.aasait.pos.backend.dto.response.SupplierDTO;
 import com.aasait.pos.backend.entity.Item;
 import com.aasait.pos.backend.entity.Order;
@@ -132,6 +134,29 @@ public class StockServiceIMPL implements StockService {
 
         // 5. Save the complete Order with cascade for OrderItems
         orderRepo.save(order);
+    }
+
+    @Override
+    public List<OrderDTO> getAllOrders() {
+        List<Order> orderList = orderRepo.findAll();
+
+        if (orderList.isEmpty()) {
+            throw new NoSuchElementException("No orders found in the system");
+
+        }
+
+        return orderList.stream().map(order -> {
+            OrderDTO orderDTO = modelMapper.map(order, OrderDTO.class);
+            orderDTO.setSupplierName(order.getSupplierId().getName());
+
+            List<OrderItemDTO> itemDTOs = order.getItems().stream().map(item->{
+                OrderItemDTO itemDTO = modelMapper.map(item, OrderItemDTO.class);
+                itemDTO.setItemName(item.getItem().getName());  // Ensure OrderItem has getItem().getName()
+                return itemDTO;
+            }).collect(Collectors.toList());
+            orderDTO.setItems(itemDTOs);
+            return orderDTO;
+        }).collect(Collectors.toList());
     }
 
 
