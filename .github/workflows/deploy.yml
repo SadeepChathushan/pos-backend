@@ -28,8 +28,10 @@ jobs:
           restore-keys: ${{ runner.os }}-maven
 
       - name: Build & Analyze with SonarQube
-        run: mvn clean verify sonar:sonar
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          # Optional: If your SonarQube is not on localhost:9000
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: |
+          mvn clean verify sonar:sonar \
+            -Dsonar.projectKey=pos-backend \
+            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+            -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
+            -Dsonar.branch.name=${GITHUB_REF_NAME}
+
