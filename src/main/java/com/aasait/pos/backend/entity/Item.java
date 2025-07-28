@@ -1,27 +1,28 @@
 package com.aasait.pos.backend.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
-@Data
+@Table(name = "item")                // good practice: explicit table name
+@Data                                 // @Getter @Setter @ToString @EqualsAndHashCode @RequiredArgsConstructor
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Item {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
+    private String itemName;
 
-    private String batchNum;
-    private String name;
-    private String category;
-    private String remarks;
-    private String brand;
-
-    private Double price;
-
-    private Integer quantity;
-    // ✅ Make sure this exists
+    /* -------- reverse side of Item‑›Order -------- */
+    @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Order> orders = new ArrayList<>();
 }

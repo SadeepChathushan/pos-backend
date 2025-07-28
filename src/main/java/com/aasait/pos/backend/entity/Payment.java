@@ -14,9 +14,9 @@ public class Payment {
     private Long id;
 
     private Double amount;
-
-    private LocalDateTime paidAt;
+    private String fileName;
+    private LocalDateTime date;
 
     @ManyToOne
-    private SalesInvoice salesInvoice;
+    private Invoice salesInvoice;
 }
