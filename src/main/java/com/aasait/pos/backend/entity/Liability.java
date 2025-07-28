@@ -3,9 +3,10 @@ package com.aasait.pos.backend.entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
+import lombok.Data;
 
 import java.time.LocalDate;
-
+@Data
 public class Liability {
     @Id
     @GeneratedValue

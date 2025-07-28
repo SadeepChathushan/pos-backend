@@ -16,6 +16,7 @@ public class Inventory {
     private Long id;
 
     private int stockQty;
+    private String status;
 
 
 
