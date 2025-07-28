@@ -1,20 +1,21 @@
 package com.aasait.pos.backend.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.*;
 import lombok.Data;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Data
 public class Payment {
+
     @Id
     @GeneratedValue
-    private Long pId;
+    private Long id;
 
     private Double amount;
-    private String paymentMethod;
+
+    private LocalDateTime paidAt;
 
     @ManyToOne
     private SalesInvoice salesInvoice;

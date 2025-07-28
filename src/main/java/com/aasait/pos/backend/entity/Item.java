@@ -8,14 +8,19 @@ import lombok.Data;
 @Entity
 @Data
 public class Item {
-    @Id
-    @GeneratedValue
-    private Long id;
 
-    private String barcode;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    private String batchNum;
     private String name;
     private String category;
+    private String remarks;
     private String brand;
-    private String salePrice;
 
+    private Double price;
+
+    private Integer quantity;
+    // ✅ Make sure this exists
 }
