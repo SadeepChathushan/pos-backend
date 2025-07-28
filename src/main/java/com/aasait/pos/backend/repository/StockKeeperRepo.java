@@ -1,4 +1,4 @@
 package com.aasait.pos.backend.repository;
 
-public interface StockKeeper {
+public interface StockKeeperRepo {
 }
