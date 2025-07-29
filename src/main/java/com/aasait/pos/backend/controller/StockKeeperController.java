@@ -8,6 +8,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("api/v1/stokkeeper")
 @CrossOrigin
 public class StockKeeperController {
-    
+
 
 }
