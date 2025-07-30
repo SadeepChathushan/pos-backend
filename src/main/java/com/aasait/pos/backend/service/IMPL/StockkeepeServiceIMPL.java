@@ -1,4 +1,4 @@
-package com.aasait.pos.backend.service.IMPL;
+// package com.aasait.pos.backend.service.IMPL;
 
-public class StockkeepeServiceIMPL {
-}
+// public class StockkeepeServiceIMPL {
+// }

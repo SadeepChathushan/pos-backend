@@ -1,4 +1,4 @@
-package com.aasait.pos.backend.service;
+// package com.aasait.pos.backend.service;
 
-public interface StockkeepeService {
-}
+// public interface StockkeepeService {
+// }
