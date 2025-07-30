@@ -24,10 +24,7 @@ public class Order {
     private Long id;
 
     private String batchId;
-    private String status;
-
-    /* money → BigDecimal to avoid rounding surprises */
-    private double total;
+    private double quantity;
     private double unitPrice;
     private double sellPrice;
 
