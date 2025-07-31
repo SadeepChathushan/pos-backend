@@ -30,7 +30,7 @@ public class Invoice {
 
 
     /* -------- owning side Order‑›Invoice -------- */
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "order_id")    // FK column in invoice
-    private Order order;
+//    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+//    @JoinColumn(name = "order_id")    // FK column in invoice
+//    private Order order;
 }
