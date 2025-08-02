@@ -36,9 +36,9 @@ public class ItemController {
     private final InvoiceService invoiceService;
 
     @PostMapping("/invoices")
-    public ResponseEntity<String> saveInvoices(@RequestBody List<InvoiceDTO> invoices) {
-        invoiceService.saveInvoices(invoices);
-        return ResponseEntity.ok("Invoices saved successfully");
+    public ResponseEntity<String> saveInvoices(@RequestBody InvoiceSaveRequestDTO requestDTO) {
+        invoiceService.saveInvoices(requestDTO);
+        return ResponseEntity.ok("Invoices saved successfully.");
     }
 
     private final PaymentService paymentService;

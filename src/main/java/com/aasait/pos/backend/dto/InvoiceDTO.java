@@ -7,5 +7,4 @@ public class InvoiceDTO {
     private String batchId;
     private Long itemId;
     private Integer quantity;
-    private String saleInvoiceId;
 }
