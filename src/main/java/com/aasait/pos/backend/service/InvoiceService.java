@@ -1,9 +1,7 @@
 package com.aasait.pos.backend.service;
 
-import com.aasait.pos.backend.dto.InvoiceDTO;
-
-import java.util.List;
+import com.aasait.pos.backend.dto.InvoiceSaveRequestDTO;
 
 public interface InvoiceService {
-    void saveInvoices(List<InvoiceDTO> invoiceDTOList);
+    void saveInvoices(InvoiceSaveRequestDTO requestDTO);
 }
