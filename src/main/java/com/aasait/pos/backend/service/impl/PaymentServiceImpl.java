@@ -1,4 +1,4 @@
-package com.aasait.pos.backend.service.impl;
+package com.aasait.pos.backend.service.IMPL;
 
 import com.aasait.pos.backend.dto.PaymentDTO;
 import com.aasait.pos.backend.entity.Invoice;
@@ -12,20 +12,24 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
-
-    private final PaymentRepository paymentRepository;
-    private final InvoiceRepository invoiceRepository;
-
     @Override
     public void savePayment(PaymentDTO dto) {
 
-        Payment payment = new Payment();
-        payment.setType(dto.getType());
-        payment.setAmount(dto.getAmount());
-        payment.setFileName(dto.getFileName());
-        payment.setSaleInvoiceId(dto.getSalesInvoiceId());
-        // date is set automatically via @PrePersist
-
-        paymentRepository.save(payment);
     }
+//
+//    private final PaymentRepository paymentRepository;
+//    private final InvoiceRepository invoiceRepository;
+//
+//    @Override
+//    public void savePayment(PaymentDTO dto) {
+//
+//        Payment payment = new Payment();
+//        payment.setType(dto.getType());
+//        payment.setAmount(dto.getAmount());
+//        payment.setFileName(dto.getFileName());
+//        payment.setSaleInvoiceId(dto.getSalesInvoiceId());
+//        // date is set automatically via @PrePersist
+//
+//        paymentRepository.save(payment);
+//    }
 }

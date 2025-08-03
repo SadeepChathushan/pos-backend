@@ -3,7 +3,12 @@ package com.aasait.pos.backend.service;
 import com.aasait.pos.backend.dto.ReqRes;
 import com.aasait.pos.backend.entity.OurUsers;
 import com.aasait.pos.backend.repository.OurUsersRepo;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -15,7 +20,9 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -32,75 +39,85 @@ public class UsersManagementService {
     /* ---------------------------------------------------------
      * LOGIN
      * --------------------------------------------------------- */
-    public ReqRes login(ReqRes in) {
-
+    public ReqRes login(ReqRes in, HttpServletResponse response) {
         ReqRes resp = new ReqRes();
 
-        // 1) locate user by e-mail
-        OurUsers user = usersRepo.findByEmail(in.getEmail())
-                .orElse(null);
-
+        OurUsers user = usersRepo.findByEmail(in.getEmail()).orElse(null);
         if (user == null) {
             resp.setStatusCode(404);
             resp.setMassage("Email not found");
             return resp;
         }
 
-        if (user.isLocked()) {                         // auto-unlock logic inside isLocked()
-            resp.setStatusCode(423);                   // HTTP 423 Locked
+        if (user.isLocked()) {
+            resp.setStatusCode(423);
             resp.setMassage("Account temporarily locked – try again later");
             return resp;
         }
 
-        /* client IP for audit / brute-force log */
-        String ip = ((ServletRequestAttributes) RequestContextHolder
-                .currentRequestAttributes())
+        String ip = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes())
                 .getRequest()
                 .getRemoteAddr();
 
-        // 2) verify password
         try {
-            authManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(in.getEmail(), in.getPassword()));
+            authManager.authenticate(new UsernamePasswordAuthenticationToken(in.getEmail(), in.getPassword()));
         } catch (BadCredentialsException bad) {
-            attempts.onFailure(user, ip);              // ++fail counter / maybe lock
+            attempts.onFailure(user, ip);
             resp.setStatusCode(401);
             resp.setMassage("Invalid credentials");
             return resp;
         }
 
-        // 3) success path
-        attempts.onSuccess(user, ip);                  // reset counter & audit OK
-        String access  = jwt.generateToken(user);      // 5-min access token
-        String refresh = refreshSvc.issue(user);       // 7-day refresh token
+        attempts.onSuccess(user, ip);
+        String access = jwt.generateToken(user);
+        String refresh = refreshSvc.issue(user);
 
+        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refresh)
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Strict")
+                .path("/auth/refresh")
+                .maxAge(Duration.ofDays(7))
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
         resp.setStatusCode(200);
         resp.setMassage("Logged-in");
         resp.setToken(access);
-        resp.setRefreshToken(refresh);
         resp.setExpirationTime("5 min");
         resp.setRole(user.getRole());
         resp.setUserId(user.getId());
         return resp;
     }
 
-    /* ---------------------------------------------------------
-     * REFRESH TOKEN
-     * --------------------------------------------------------- */
-    public ReqRes refreshToken(ReqRes in) {
-
+    public ReqRes refreshToken(HttpServletRequest request, HttpServletResponse response) {
         ReqRes resp = new ReqRes();
 
         try {
-            OurUsers user   = refreshSvc.validateAndRotate(in.getToken()); // revokes old
-            String   access = jwt.generateToken(user);
-            String   rtn    = refreshSvc.issue(user);
+            String old = Arrays.stream(Optional.ofNullable(request.getCookies()).orElse(new Cookie[0]))
+                    .filter(c -> c.getName().equals("refreshToken"))
+                    .findFirst()
+                    .map(Cookie::getValue)
+                    .orElseThrow(() -> new RuntimeException("Missing refresh token"));
+
+            OurUsers user = refreshSvc.validateAndRotate(old);
+            String access = jwt.generateToken(user);
+            String newRefresh = refreshSvc.issue(user);
+
+            ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", newRefresh)
+                    .httpOnly(true)
+                    .secure(true)
+                    .sameSite("Strict")
+                    .path("/auth/refresh")
+                    .maxAge(Duration.ofDays(7))
+                    .build();
+
+            response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
             resp.setStatusCode(200);
             resp.setMassage("Token refreshed");
             resp.setToken(access);
-            resp.setRefreshToken(rtn);
             resp.setExpirationTime("5 min");
             resp.setRole(user.getRole());
             resp.setUserId(user.getId());
@@ -108,6 +125,7 @@ public class UsersManagementService {
             resp.setStatusCode(401);
             resp.setMassage(ex.getMessage());
         }
+
         return resp;
     }
 

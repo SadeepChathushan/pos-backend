@@ -5,6 +5,7 @@ import com.aasait.pos.backend.dto.ApiResponse;
 import com.aasait.pos.backend.dto.request.AddItemDTO;
 import com.aasait.pos.backend.dto.request.AddOrderDTO;
 import com.aasait.pos.backend.dto.request.BulkOrderDTO;
+import com.aasait.pos.backend.dto.response.ItemWithBatchesDTO;
 import com.aasait.pos.backend.service.StockkeepeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -105,5 +106,36 @@ public class StockKeeperController {
     }
 
 
+
+    @GetMapping("/items-with-batches")
+    public ResponseEntity<ApiResponse<List<ItemWithBatchesDTO>>> getItemsWithBatches() {
+        try {
+            List<ItemWithBatchesDTO> data = stockkeepeService.getItemsWithBatches();
+            ApiResponse<List<ItemWithBatchesDTO>> response = new ApiResponse<>(
+                    LocalDateTime.now(),
+                    "Item batches fetched successfully",
+                    data,
+                    HttpStatus.OK.value()
+            );
+            return ResponseEntity.ok(response);
+
+        } catch (NoSuchElementException e) {
+            ApiResponse<List<ItemWithBatchesDTO>> response = new ApiResponse<>(
+                    LocalDateTime.now(),
+                    e.getMessage(),
+                    null,
+                    HttpStatus.NOT_FOUND.value()
+            );
+            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            ApiResponse<List<ItemWithBatchesDTO>> response = new ApiResponse<>(
+                    LocalDateTime.now(),
+                    "Internal server error",
+                    null,
+                    HttpStatus.INTERNAL_SERVER_ERROR.value()
+            );
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
 }

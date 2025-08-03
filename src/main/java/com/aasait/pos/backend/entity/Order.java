@@ -37,6 +37,9 @@ public class Order {
     @JsonBackReference
     private Item item;
 
+    public void setTotal(double total) {
+    }
+
     /* -------- reverse side Order‑›Invoice -------- */
 //    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
 //    private List<Invoice> invoices = new ArrayList<>();

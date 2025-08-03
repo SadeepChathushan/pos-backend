@@ -2,6 +2,8 @@ package com.aasait.pos.backend.service.IMPL;
 
 import com.aasait.pos.backend.dto.request.AddItemDTO;
 import com.aasait.pos.backend.dto.request.AddOrderDTO;
+import com.aasait.pos.backend.dto.response.ItemWithBatchesDTO;
+import com.aasait.pos.backend.dto.response.OrderBatchDTO;
 import com.aasait.pos.backend.entity.Item;
 import com.aasait.pos.backend.entity.Order;
 import com.aasait.pos.backend.repository.ItemRepo;
@@ -90,6 +92,43 @@ public class StockkeepeServiceIMPL implements StockkeepeService {
         }
 
         orderRepo.saveAll(orders);
+    }
+
+    @Override
+    public List<ItemWithBatchesDTO> getItemsWithBatches() {
+
+        List<Item> items = itemRepo.findAll();
+
+        return items.stream().map(item -> {
+            ItemWithBatchesDTO dto = new ItemWithBatchesDTO();
+            dto.setId(item.getId());
+            dto.setItemName(item.getItemName());
+
+            List<OrderBatchDTO> batches = item.getOrders().stream().map(order -> {
+                OrderBatchDTO batchDTO = new OrderBatchDTO();
+
+                batchDTO.setBatchId(order.getBatchId());
+                batchDTO.setDateAdded(parseBatchIdToDate(order.getBatchId()));
+                batchDTO.setSellPrice(order.getSellPrice());
+                batchDTO.setUnitPrice(order.getUnitPrice());
+                batchDTO.setQuantity((int) order.getQuantity());
+                return batchDTO;
+            }).collect(Collectors.toList());
+
+            dto.setBatches(batches);
+            return dto;
+        }).collect(Collectors.toList());
+    }
+
+    // Helper: Converts batchId like 20250729 -> "2025-07-29"
+    private String parseBatchIdToDate(String batchId) {
+        try {
+            DateTimeFormatter inputFmt = DateTimeFormatter.ofPattern("yyyyMMdd");
+            LocalDate date = LocalDate.parse(batchId, inputFmt);
+            return date.toString();
+        } catch (Exception e) {
+            return batchId; // fallback if format is wrong
+        }
     }
 
 
